@@ -33,7 +33,7 @@ static ssize_t module_output(struct file *file,
 
   finished = 1;
   return i;
-
+}
 
 static ssize_t module_input(struct file *file,
 			    const char *buf,
