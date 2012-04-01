@@ -35,7 +35,10 @@ static int procfile_read(char *buffer, char **buffer_location,
   return ret;
 }
 
-static int procfile_write(struct file *file, const char *buffer, unsigned long count)
+static int procfile_write(struct file *file,
+			  const char *buffer,
+			  unsigned long count,
+			  void *ptr)
 {
   procfs_buffer_size = count;
   if (procfs_buffer_size > PROCFS_MAX_SIZE) {

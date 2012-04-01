@@ -5,6 +5,8 @@
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 
+#include "chardev.h"
+
 #define DRIVER_AUTHOR "Tushar R. Gosavi"
 #define DRIVER_DESC    "A minimum char device driver"
 MODULE_LICENSE("GPL");
@@ -26,40 +28,43 @@ static int opened = 0;
 static char msg[BUF_LEN];
 static char *msgPtr;
 static ssize_t device_read(struct file*, char *, size_t, loff_t *);
-static ssize_t device_write(struct file*, const char *, size_t, loff_t *);
+static ssize_t device_write(struct file*, const char __user*, size_t, loff_t *);
 static int device_open(struct inode*, struct file*);
 static int device_release(struct inode *, struct file *);
-
+static int device_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
 
 static struct file_operations fops = {
   .read = device_read,
   .write = device_write,
+  .ioctl = device_ioctl,
   .open = device_open,
   .release = device_release
 };
 
 static int __init hello_init(void)
 {
-  Major = register_chrdev(0, DEVICE_NAME, &fops);
+  int ret_val;
+
+  ret_val = register_chrdev(MAJOR_NUM, DEVICE_NAME, &fops);
   
-  if (Major < 0) {
+  if (ret_val < 0) {
     printk(KERN_ALERT "Registration of char device driver failed\n");
     return Major;
   }
 
-  printk(KERN_INFO "I was assisgned major number %d \n", Major);
-  printk(KERN_INFO "mknod /dev/%s c %d 0\n", DEVICE_NAME, Major);
+  printk(KERN_INFO "I was assisgned major number %d \n", MAJOR_NUM);
+  printk(KERN_INFO "mknod /dev/%s c %d 0\n", DEVICE_NAME, MAJOR_NUM);
 
   return SUCCESS;
 }
 
 static void __exit hello_exit(void)
 {
-  unregister_chrdev(Major, DEVICE_NAME);
-  /*
-  if (ret < 0) 
-    printk(KERN_ALERT "Error in unregister of chardev %d\n", Major);
-  */
+  unregister_chrdev(MAJOR_NUM, DEVICE_NAME);
+  
+  /* if (ret < 0)  */
+  /*   printk(KERN_ALERT "Error in unregister of chardev %d\n", Major); */
+ 
   printk(KERN_INFO "Removing driver");
 }
 
@@ -101,10 +106,55 @@ static ssize_t device_read(struct file *filp,
   return bytes_read;
 }
 
-static ssize_t device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
+static ssize_t device_write(struct file *filp,
+			    const char __user *buff,
+			    size_t len,
+			    loff_t *off)
 {
-  printk(KERN_ALERT "Sorry, this operation is not supported\n");
-  return -EINVAL;
+  int i;
+
+  for (i = 0; i < len && i < BUF_LEN; i++)
+    get_user(msg[i], buff + i);
+
+  msgPtr =  msg;
+
+  return i;
+}
+
+static int device_ioctl(struct inode *inode,
+			struct file *file,
+			unsigned int ioctl_num,
+			unsigned long ioctl_param)
+{
+  int i;
+  char *temp;
+  char ch;
+
+  switch (ioctl_num) {
+
+  case IOCTL_SET_MSG :
+    printk(KERN_INFO "ioctl : Setting a new msg\n");
+    /* Receive a pointer to a msg (in user space) */
+    temp = (char*)ioctl_param;
+    get_user(ch, temp);
+    for (i = 0; ch && i < BUF_LEN; i++, temp++)
+      get_user(ch, temp);
+
+    device_write(file, (char*)ioctl_param, i, 0);
+    break;
+
+  case IOCTL_GET_MSG :
+    printk(KERN_INFO "ioctl : returning the information %s\n", msg);
+    i = device_read(file, (char*) ioctl_param, 99, 0);
+    put_user('\0', (char*) ioctl_param+i);
+    break;
+
+  case IOCTL_GET_NTH_BYTE :
+    printk(KERN_INFO "ioctl : returning %c\n", msg[ioctl_param]);
+    return msg[ioctl_param];
+    break;
+  }
+  return SUCCESS;
 }
 
 module_init(hello_init);
