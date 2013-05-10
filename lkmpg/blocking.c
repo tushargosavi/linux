@@ -86,11 +86,7 @@ int module_close(struct inode *inode, struct file *file)
   return 0;
 }
 
-static int module_permissions(struct inode *inode, int op
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0 ,0) ) 
-			      ,unsigned int nd
-#endif
-	                     )
+static int module_permissions(struct inode *inode, int op)
 {
   if ((op == 4 || op == 2) && (current_uid() == 0))
     return 0;

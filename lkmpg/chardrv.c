@@ -31,12 +31,12 @@ static ssize_t device_read(struct file*, char *, size_t, loff_t *);
 static ssize_t device_write(struct file*, const char __user*, size_t, loff_t *);
 static int device_open(struct inode*, struct file*);
 static int device_release(struct inode *, struct file *);
-static int device_ioctl(struct inode *, struct file *, unsigned int, unsigned long);
+static long device_ioctl(struct file *, unsigned int, unsigned long);
 
 static struct file_operations fops = {
   .read = device_read,
   .write = device_write,
-  .ioctl = device_ioctl,
+  .unlocked_ioctl = device_ioctl,
   .open = device_open,
   .release = device_release
 };
@@ -121,8 +121,7 @@ static ssize_t device_write(struct file *filp,
   return i;
 }
 
-static int device_ioctl(struct inode *inode,
-			struct file *file,
+static long device_ioctl(struct file *file,
 			unsigned int ioctl_num,
 			unsigned long ioctl_param)
 {

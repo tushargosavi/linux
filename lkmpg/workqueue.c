@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/timer.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 

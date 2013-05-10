@@ -52,7 +52,7 @@ int init_module()
   printk(KERN_INFO "init_module sys_call_table address is 0x%llx\n",
 	 (unsigned long long)sys_call_table);
   original_call = sys_call_table[__NR_open];
-  printk(KERN_INFO "Address of open function is 0x%llx\n", original_call);
+  printk(KERN_INFO "Address of open function is 0x%p\n", original_call);
 
   /* sys_call_table[__NR_open] = our_sys_open; */
 
